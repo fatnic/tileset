@@ -3,27 +3,39 @@
 #include <string>
 #include <sstream>
 #include <iostream>
+#include <fstream>
+#include <algorithm>
 
-sf::Vector2i mainWindow(800,600);
+#include "pugixml.hpp"
 
 int main()
 {
     sf::RenderWindow window;
 
-    // Load tileset image into memory
+    // read map file
+    pugi::xml_document mapDoc;
+    mapDoc.load_file("assets/map2.tmx");
+
+    pugi::xml_node nodeMap = mapDoc.child("map");
+    pugi::xml_node nodeTileset = mapDoc.child("map").child("tileset");
+    pugi::xml_node nodeData = mapDoc.child("map").child("layer").child("data");
+
     sf::Image imgTileset;
-    imgTileset.loadFromFile("assets/test_tiles.png");
+
+    std::string fnTileset = nodeTileset.child("image").attribute("source").as_string();
+
+    imgTileset.loadFromFile("assets/" + fnTileset);
 
     // width/height of each tile
-    int tileWidth = 32;
-    int tileHeight = 32;
+    int tileWidth = nodeTileset.attribute("tilewidth").as_int();
+    int tileHeight = nodeTileset.attribute("tileheight").as_int();
 
     // Amount of tiles per row
     int tilesX = imgTileset.getSize().x / tileWidth; //3
 
     // Amount of tiles per screen x/y
-    int screenXTiles = 3;
-    int screenYTiles = 3;
+    int screenXTiles = nodeMap.attribute("width").as_int();
+    int screenYTiles = nodeMap.attribute("height").as_int();
 
     window.create(sf::VideoMode(tileWidth * screenXTiles, tileHeight * screenYTiles), "GameWindow");
 
@@ -36,7 +48,9 @@ int main()
     int tilePosY = 1;
 
     // grab csv of map tile numbers and parse
-    std::string map = "1,2,3,4,5,6,7,8,9";
+    std::string rawstring = nodeData.child_value();
+    rawstring.erase(std::remove(rawstring.begin(), rawstring.end(), '\n'), rawstring.end());
+    std::string map = rawstring.c_str();
     std::istringstream ss(map);
     std::string tile;
 
